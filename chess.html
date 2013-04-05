@@ -1,0 +1,44 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <title>Mutilated Chessboard</title>
+    <style>
+      .center {
+        margin: auto; 
+        position: absolute;
+        top: 0px;
+        bottom: 0px;
+        left: 0px;
+        right: 0px;
+      }
+      div {
+        width: 400px;
+        height: 400px;
+        background: #CACACA;
+        border: 2px solid gray;
+        border-radius: 5px;
+        box-shadow: 10px 10px 5px #888888;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="center">
+      <canvas id="chessboard" width="500" height="500"></canvas>
+    </div>
+    <script>
+      function loadCanvas(dataURL) {
+        var canvas = document.getElementById('chessboard');
+        var context = canvas.getContext('2d');
+        
+        // load image from data url
+        var imageObj = new Image()
+        imageObj.onload = function() {
+          context.drawImage(this, 0, 0);
+        };
+
+        imageObj.src = dataURL;
+      }
+      loadCanvas('images/chessboard.png');
+    </script>
+  </body>
+</html>
