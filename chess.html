@@ -2,8 +2,8 @@
 <html>
   <head>
     <title>Mutilated Chessboard</title>
-    <style>
-      .center {
+    <!--<style>
+      .kineticjs-content {
         margin: auto; 
         position: absolute;
         top: 0px;
@@ -11,34 +11,142 @@
         left: 0px;
         right: 0px;
       }
-      div {
+      div.kineticjs-content {
         width: 400px;
         height: 400px;
-        background: #CACACA;
+        background: #555555;
         border: 2px solid gray;
         border-radius: 5px;
-        box-shadow: 10px 10px 5px #888888;
+        /*box-shadow: 10px 10px 5px #888888;*/
       }
-    </style>
+    </style>-->
   </head>
   <body>
-    <div class="center">
-      <canvas id="chessboard" width="500" height="500"></canvas>
+    <div id="container" class="center"></div>
+    <script src="kinetic-v4.4.3.min.js"></script>
+    <script defer="defer">
+      function loadImages(sources, callback) {
+        var images = {};
+        var loadedImages = 0;
+        var numImages = 0;
+        for (var src in sources) {
+          numImages++;
+        }
+
+        for (var src in sources) {
+          images[src] = new Image();
+          images[src].onload = function() {
+            if(++loadedImages >= numImages) {
+              callback(images);
+            }
+          };
+          images[src].src = sources[src];
+        }
+      }
+
+      function initStage(images) {
+        // set the stage
+        var stage = new Kinetic.Stage({
+          container: 'container',
+          width: 460,
+          height: 460
+        });
+
+        // define layers
+        var chessLayer = new Kinetic.Layer();
+        var topLayer = new Kinetic.Layer();
+
+        // define images
+        var chessboard = new Kinetic.Image({
+          x: 0,
+          y: 0,
+          image: images.chessboard
+        });
+      
+        var verttile = new Kinetic.Image({
+          x: 410,
+          y: 0,
+          image: images.verttile,
+          draggable: true
+        });
+
+        var horiztile = new Kinetic.Image({
+          x: 0,
+          y: 410,
+          image: images.horiztile,
+          draggable: true
+        });
+
+        // add cursor styling
+        verttile.on('mouseover', function() {
+          document.body.style.cursor = 'pointer';
+        });
+        verttile.on('mouseout', function() {
+          document.body.style.cursor = 'default';
+        });
+        horiztile.on('mouseover', function() {
+          document.body.style.cursor = 'pointer';
+        });
+        horiztile.on('mouseout', function() {
+          document.body.style.cursor = 'default';
+        });
+    
+        // add images to layers
+        chessLayer.add(chessboard);
+        topLayer.add(verttile);
+        topLayer.add(horiztile);
+    
+        stage.add(chessLayer);
+        stage.add(topLayer);
+      }
+      var sources = {
+        chessboard: 'images/chessboard.png',
+        horiztile: 'images/horiztile.png',
+        verttile: 'images/verttile.png'
+      };
+      
+      loadImages(sources, initStage);
+      
+    </script>
+
+    <!--<div class="center">
+      <canvas id="chessboard" width="460" height="460"></canvas>
     </div>
     <script>
-      function loadCanvas(dataURL) {
-        var canvas = document.getElementById('chessboard');
-        var context = canvas.getContext('2d');
-        
-        // load image from data url
-        var imageObj = new Image()
-        imageObj.onload = function() {
-          context.drawImage(this, 0, 0);
-        };
+      function loadCanvas(sources, callback) {
+        var images = {};
+        var loadedImages = 0;
+        var numImages = 0;
 
-        imageObj.src = dataURL;
+        // get num of sources
+        for(var src in sources) {
+          numImages++;
+        }
+        for (var src in sources) {
+          images[src] = new Image();
+          images[src].onload = function() {
+            if(++loadedImages >= numImages) {
+              callback(images);
+            }
+          };
+          images[src].src = sources[src];
+        }
       }
-      loadCanvas('images/chessboard.png');
-    </script>
+      var canvas = document.getElementById('chessboard');
+      var context = canvas.getContext('2d');
+
+      var sources = {
+        chessboard: 'images/chessboard.png',
+        verttile: 'images/verttile.png',
+        horiztile: 'images/horiztile.png'
+      };
+
+      loadCanvas(sources, function(images) {
+        context.drawImage(images.chessboard, 0, 0);
+        context.drawImage(images.verttile, 410, 0);
+        context.drawImage(images.horiztile, 0, 410);
+      });
+
+    </script>-->
   </body>
 </html>
