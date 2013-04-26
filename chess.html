@@ -20,11 +20,26 @@
         /*box-shadow: 10px 10px 5px #888888;*/
       }
     </style>-->
+    <script>
+      //$(document).ready(function() {
+      //  $('body').on('contextmenu', 'canvas', function(e){return false;});
+      //});
+    </script>
   </head>
   <body>
     <div id="container" class="center"></div>
     <script src="kinetic-v4.4.3.min.js"></script>
     <script defer="defer">
+      //$('body').on('contextmenu', 'canvas', function(e){return false;});
+
+      function writeMessage(messageLayer, message) {
+        var context = messageLayer.getContext();
+        messageLayer.clear();
+        context.font = '12pt Calibri';
+        context.fillStyle = 'black';
+        context.fillText(message, 370, 420);
+      }
+        
       function loadImages(sources, callback) {
         var images = {};
         var loadedImages = 0;
@@ -49,12 +64,13 @@
         var stage = new Kinetic.Stage({
           container: 'container',
           width: 460,
-          height: 460
+          height: 460,
         });
 
         // define layers
         var chessLayer = new Kinetic.Layer();
         var topLayer = new Kinetic.Layer();
+        var messageLayer = new Kinetic.Layer();
 
         // define images
         var chessboard = new Kinetic.Image({
@@ -67,14 +83,78 @@
           x: 410,
           y: 0,
           image: images.verttile,
-          draggable: true
+          id: 0,
+          //draggable: true
+          dragBoundFunc: function(pos) {
+            var newX, newY;
+            if (pos.x < 50) {
+              if (pos.y < 50 && pos.y > pos.x) {
+                newX = pos.x;
+                newY = 50;
+              }
+              else if (pos.y < 50 && pos.y < pos.x) {
+                newX = 50;
+                newY = pos.y;
+              }
+              else newX = pos.x, newY = pos.y;
+            }
+            else if (pos.x > 300) {
+              if (pos.y > 250 && pos.y < pos.x) {
+                newX = pos.x;
+                newY = 250;
+              }
+              else if (pos.y > 250 && pos.y > pos.x) {
+                newX = 300;
+                newY = pos.y;
+              }
+              else newX = pos.x, newY = pos.y;
+            }
+            else newX = pos.x, newY = pos.y;
+            
+            return {
+              x: newX,
+              y: newY
+            }
+          }
         });
 
         var horiztile = new Kinetic.Image({
           x: 0,
           y: 410,
           image: images.horiztile,
-          draggable: true
+          id: 1,
+          //draggable: true,
+          dragBoundFunc: function(pos) {
+            var newX, newY;
+            if (pos.x < 50) {
+              if (pos.y < 50 && pos.y > pos.x) {
+                newX = pos.x;
+                newY = 50;
+              }
+              else if (pos.y < 50 && pos.y < pos.x) {
+                newX = 50;
+                newY = pos.y;
+              }
+              else newX = pos.x, newY = pos.y;
+            }
+            else if (pos.x > 250) {
+              if (pos.y > 250 && pos.y < pos.x) {
+                newX = pos.x;
+                newY = 300;
+              }
+              else if (pos.y > 250 && pos.y > pos.x) {
+                newX = 250;
+                newY = pos.y;
+              }
+              else newX = pos.x, newY = pos.y;
+            }
+            else newX = pos.x, newY = pos.y;
+            
+            return {
+              x: newX,
+              y: newY
+            }
+          }
         });
 
         // add cursor styling
@@ -90,7 +170,57 @@
         horiztile.on('mouseout', function() {
           document.body.style.cursor = 'default';
         });
-    
+
+        // keep track of total horiz and vert tiles
+        var total = 2;
+        var allowed = 31;
+
+        // add events
+        verttile.on('click', function() {
+          var id = this.getId();
+          if (id === 0 && total < allowed) {
+            var cloneVert = verttile.clone({x:410, y:0});
+            cloneVert.setId(total++);
+            cloneVert.setDraggable(true);
+            //cloneVert.dragBoundFunc(function(pos) {
+            //  return {x: pos.x, y:this.getAbsolutePosition().y};
+            //});
+            cloneVert.on('click', function(e) {
+              // 1: left click, 2: middle click, 3: right click
+              if (e.which == 2) {
+                this.destroy();
+                topLayer.draw();
+                total -= 1;
+                writeMessage(messageLayer, 'Total: ' + total);
+              };
+            });
+            topLayer.add(cloneVert);
+            topLayer.draw();
+            writeMessage(messageLayer, 'Total: ' + total);
+          }
+        });
+
+        horiztile.on('click', function() {
+          var id = this.getId();
+          if (id === 1 && total < allowed) {
+            var cloneHoriz = horiztile.clone({x:0, y:410});
+            cloneHoriz.setId(total++);
+            cloneHoriz.setDraggable(true);
+            cloneHoriz.on('click', function(e) {
+              // 1: left click, 2: middle click, 3: right click
+              if (e.which == 2) {
+                this.destroy();
+                topLayer.draw();
+                total -= 1;
+                writeMessage(messageLayer, 'Total: ' + total);
+              };
+            });
+            topLayer.add(cloneHoriz);
+            topLayer.draw();
+            writeMessage(messageLayer, 'Total: ' + total);
+          }
+        });
+        
         // add images to layers
         chessLayer.add(chessboard);
         topLayer.add(verttile);
@@ -98,6 +228,7 @@
     
         stage.add(chessLayer);
         stage.add(topLayer);
+        stage.add(messageLayer);
       }
       var sources = {
         chessboard: 'images/chessboard.png',
@@ -106,7 +237,6 @@
       };
       
       loadImages(sources, initStage);
-      
     </script>
 
     <!--<div class="center">
