@@ -1,0 +1,354 @@
+<!doctype html>
+<html>
+  <head>
+    <script></script>
+  </head>
+  <body>
+    <canvas class="nocontext" id="board"></canvas>
+  </body>
+  
+  <script>
+    function copy(object) {
+      if (!object || typeof (object) != 'object' || object instanceof Class) {
+        return object;
+      } else if (object instanceof Array) {
+        var c = [];
+        for (var i = 0, l = object.length; i < l; i++) {
+            c[i] = copy(object[i]);
+        }
+        return c;
+      } else {
+        var c = {};
+        for (var i in object) {
+            c[i] = copy(object[i]);
+        }
+        return c;
+      }
+    }
+    //-----------------------------------------------------------------------------
+    // Class object based on John Resigs code; inspired by base2 and Prototype
+    // http://ejohn.org/blog/simple-javascript-inheritance/
+    (function () {
+      var initializing = false,
+        fnTest = /xyz/.test(function () {
+            xyz;
+        }) ? /\bparent\b/ : /.*/;
+
+      this.Class = function () {};
+      var inject = function (prop) {
+        var proto = this.prototype;
+        var parent = {};
+        for (var name in prop) {
+            if (typeof (prop[name]) == "function" && typeof (proto[name]) ==
+                "function" && fnTest.test(prop[name])) {
+                parent[name] = proto[name]; // save original function
+                proto[name] = (function (name, fn) {
+                    return function () {
+                        var tmp = this.parent;
+                        this.parent = parent[name];
+                        var ret = fn.apply(this, arguments);
+                        this.parent = tmp;
+                        return ret;
+                    };
+                })(name, prop[name]);
+            } else {
+                proto[name] = prop[name];
+            }
+        }
+      };
+
+      this.Class.extend = function (prop) {
+        var parent = this.prototype;
+
+        initializing = true;
+        var prototype = new this();
+        initializing = false;
+
+        for (var name in prop) {
+            if (typeof (prop[name]) == "function" && typeof (parent[name]) ==
+                "function" && fnTest.test(prop[name])) {
+                prototype[name] = (function (name, fn) {
+                    return function () {
+                        var tmp = this.parent;
+                        this.parent = parent[name];
+                        var ret = fn.apply(this, arguments);
+                        this.parent = tmp;
+                        return ret;
+                    };
+                })(name, prop[name]);
+            } else {
+                prototype[name] = prop[name];
+            }
+        }
+
+        function Class() {
+            if (!initializing) {
+
+                // If this class has a staticInstantiate method, invoke it
+                // and check if we got something back. If not, the normal
+                // constructor (init) is called.
+                if (this.staticInstantiate) {
+                    var obj = this.staticInstantiate.apply(this, arguments);
+                    if (obj) {
+                        return obj;
+                    }
+                }
+
+                for (var p in this) {
+                    if (typeof (this[p]) == 'object') {
+                        this[p] = copy(this[p]); // deep copy!
+                    }
+                }
+
+                if (this.init) {
+                    this.init.apply(this, arguments);
+                }
+            }
+
+            return this;
+        }
+
+        Class.prototype = prototype;
+        Class.constructor = Class;
+        Class.extend = arguments.callee;
+        Class.inject = inject;
+
+        return Class;
+      };
+
+    })();
+
+    TileClass = Class.extend({
+      pos: {x:0,y:0},
+      size: {x:0,y:0},
+      image: null,
+      _killed: false,
+      currTile: null,
+      selected: false,
+
+      update: function() { },
+    
+      draw: function() {
+        if (this.currTile) {
+          ctx.drawImage(this.image, this.pos.x, this.pos.y);
+        }
+      }
+      
+    });
+
+    EngineClass = Class.extend({
+      tiles: [],
+      factory: {},
+     
+      spawnTile: function (typename) {
+        var tile = new (this.factory[typename])();
+
+        this.tiles.push(tile);
+
+        return tile;
+      },
+
+      update: function() {
+        for (var i = 0; i < this.tiles.length; i++) {
+          var tile = this.tiles[i];
+          if (!tile._killed)
+            tile.update();
+        }
+      },
+
+      setup: function() {
+        canvas = document.getElementById("board");
+        ctx = canvas.getContext('2d');
+        canvas.width = 460;
+        canvas.height = 460;
+      
+        sources = {
+          chessboard: 'images/chessboard.png',
+          horizTile: 'images/horiztile.png',
+          vertTile: 'images/verttile.png'
+        };
+
+        loadImages(sources, function(images) {
+          ctx.drawImage(images.chessboard, 0, 0);
+          ctx.drawImage(images.horizTile, 0, 410);
+          ctx.drawImage(images.vertTile, 410, 0);
+        });
+        
+        var horiz = this.spawnTile('Horiz');
+        var vert = this.spawnTile('Vert');
+        
+        canvas.addEventListener("mousemove", onMouseMove);
+        canvas.addEventListener("click", onClick); 
+        //intervalId = setInterval(this.draw, 20);
+
+      },
+
+      draw: function() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(images.chessboard, 0, 0);
+        // should not be gEngine below...
+        gEngine.update();
+      }
+
+    });
+    var gEngine = new EngineClass();
+
+    HorizClass = TileClass.extend({
+      pos: {x:0, y:410},
+      size: {x:100, y:50}, 
+      kill: function() {
+        this._killed = true;
+        gEngine.removeTile(this);   
+      },
+
+      update: function() {
+        ctx.drawImage(images.horizTile, this.pos.x, this.pos.y);
+      }
+    });
+    gEngine.factory['Horiz'] = HorizClass;
+
+    VertClass = TileClass.extend({
+      pos: {x:410, y:0},
+      size: {x:50, y:100},
+      kill: function() {
+        gEngine.removeTile(this);
+      },
+      
+      update: function() {
+        ctx.drawImage(images.vertTile, this.pos.x, this.pos.y);
+      }
+    });
+    gEngine.factory['Vert'] = VertClass;
+
+    //var gEngine = new EngineClass();
+
+    var canvas = null;
+    var ctx = null;
+    var intervalId;
+    var sources = {};
+    var images = {};
+    var posx = 0;
+    var posy = 0;
+    var centerX = -30;
+    var centerY = -50;
+
+    function onMouseMove(event)
+    {
+      var x = event.clientX;
+      var xm10 = x%10;
+      var xm100 = x%100-xm10;
+
+      var y = event.clientY;
+      var ym10 = y%10;
+      var ym100 = y%100 - ym10;
+
+      // snap to grid
+      if ((xm100) < 50)
+        posx = (x - xm10 - xm100);
+      else
+        posx = (x - xm10 - xm100)  + 50;
+      
+      if ((ym100) < 50)
+        posy = (y - ym10 - ym100);
+      else
+        posy = (y - ym10 - ym100) + 50;
+
+      // Keep in bounds
+      if (posx > 350)
+        posx = 350;
+
+      if (posy > 300)
+        posy = 300;
+
+      for (var i = 0; i < gEngine.tiles.length; i++) {
+        var tile = gEngine.tiles[i];
+        if (tile.selected) {
+          console.log("tile, ", i);
+          tile.pos.x = posx;
+          tile.pos.y = posy;
+        }
+      }
+      //posx = posx //+ centerX;
+      //posy = posy + centerY;
+
+      //console.log("(realX: ", event.clientX, ", normalizedX: ", posx, ", ", posy, ")");
+    }
+
+    function onClick(event)
+    {
+      var posx = event.clientX;
+      var posy = event.clientY;
+      var horiz = {pos: {x:0, y:410}, size: {x:100, y:50}};
+      var vert = {pos: {x:410, y:0}, size: {x:50, y:100}};
+    
+      // Create a new tile
+      if (posx > horiz.pos.x && posx < (horiz.pos.x + horiz.size.x)) {
+        if (posy > horiz.pos.y && posy < (horiz.pos.y + horiz.size.y)) {
+          console.log("create horiz");
+          var horiz = gEngine.spawnTile("Horiz");
+          horiz.pos.x = 0;
+          horiz.pos.y = 410;
+          horiz.selected = true;
+          return;
+        }
+      }
+      else if (posx > vert.pos.x && posx < (vert.pos.x + vert.size.x)) {
+        if (posy > vert.pos.y && posy < (vert.pos.y + vert.size.y)) {
+          console.log("create vert");
+          var vert = gEngine.spawnTile("Vert");
+          vert.pos.x = 410;
+          vert.pos.y = 0;
+          vert.selected = true;
+          return;
+        }
+      }
+
+      for (var i = 0; i < gEngine.tiles.length; i++) {
+        var tile = gEngine.tiles[i];
+        if (posx > tile.pos.x && posx < (tile.pos.x + tile.size.x)) {
+          if (posy > tile.pos.y && posy < (tile.pos.y + tile.size.y)){
+            if (tile.selected) {
+              tile.selected = false;
+              console.log("deselected, ", i);
+            }
+            else {
+              tile.selected = true;
+              console.log("selected, ", i);
+            }
+          }
+        }
+      }
+        
+      console.log("click: ", posx, posy);
+    }
+
+    function loadImages(sources, callback) 
+    {
+      var loadedImages = 0;
+      var numImages = 0;
+
+      for (var src in sources) {
+        images[src] = new Image();
+        images[src].onload = function() {
+          if (++loadedImages >= numImages) {
+            callback(images);
+          }
+        };
+        images[src].src = sources[src];
+      }
+    }
+    
+    //function horizTile(x, y) {
+    //  ctx.drawImage(images.horizTile, x, y);
+    //}
+    
+    //function vertTile(x, y) {
+    //  ctx.drawImage(images.vertTile, x, y);
+    //}
+    
+    gEngine.setup();
+    intervalId = setInterval(gEngine.draw, 20);
+    //gEngine.factory['Vert'] = VertClass;
+    //gEngine.factory['Horiz'] = HorizClass; 
+  </script>
+</html>
