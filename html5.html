@@ -27,7 +27,8 @@
     </script>
   </body>
   <script>
-    function copy(object) {
+     
+   function copy(object) {
       if (!object || typeof (object) != 'object' || object instanceof Class) {
         return object;
       } else if (object instanceof Array) {
@@ -136,25 +137,8 @@
       };
 
     })();
-
-    TileClass = Class.extend({
-      pos: {x:0,y:0},
-      size: {x:0,y:0},
-      image: null,
-      _killed: false,
-      currTile: null,
-      selected: false,
-
-      update: function() { },
-    
-      draw: function() {
-        if (this.currTile) {
-          ctx.drawImage(this.image, this.pos.x, this.pos.y);
-        }
-      }
-      
-    });
-
+   
+    // Base class to run the chessboard
     EngineClass = Class.extend({
       tiles: [],
       factory: {},
@@ -216,11 +200,31 @@
       }
 
     });
-    var gEngine = new EngineClass();
 
+       // Base class for horizontal and vertical tiles
+    TileClass = Class.extend({
+      pos: {x:0,y:0},
+      size: {x:0,y:0},
+      image: null,
+      _killed: false,
+      currTile: null,
+      selected: false,
+
+      update: function() { },
+    
+      draw: function() {
+        if (this.currTile) {
+          ctx.drawImage(this.image, this.pos.x, this.pos.y);
+        }
+      }
+      
+    });
+    
+    // Horizontal tile class
     HorizClass = TileClass.extend({
       pos: {x:0, y:410},
       size: {x:100, y:50}, 
+      mid: {x:50, y:410},
       kill: function() {
         this._killed = true;
         gEngine.removeTile(this);   
@@ -240,15 +244,17 @@
           //else if (this.pos.y > 250)// && this.pos.y > this.pos.x)
           //  this.pos.x = 300;
         }
-
+        this.mid.x = this.pos.x + 50;
+        this.mid.y = this.pos.y;
         ctx.drawImage(images.horizTile, this.pos.x, this.pos.y);
       }
     });
-    gEngine.factory['Horiz'] = HorizClass;
-
+    
+     // Vertical tile class
     VertClass = TileClass.extend({
       pos: {x:410, y:0},
       size: {x:50, y:100},
+      mid: {x:410, y:50},
       kill: function() {
         gEngine.removeTile(this);
       },
@@ -269,13 +275,22 @@
         //  posx = 300;
         }
  
-
+        this.mid.x = this.pos.x;
+        this.mid.y = this.pos.y + 50;
         ctx.drawImage(images.vertTile, this.pos.x, this.pos.y);
       }
-    });
+    }); 
+   
+    var gEngine = new EngineClass();
+    
+    
+    gEngine.factory['Horiz'] = HorizClass;
+
+   
     gEngine.factory['Vert'] = VertClass;
 
     //var gEngine = new EngineClass();
+
 
     var canvas = null;
     var ctx = null;
@@ -288,6 +303,7 @@
     var centerY = -50;
     var MAXTILES = 30;  // makes 31 tiles
     var message = "Total: 0";
+    var selected = null;
 
     function onMouseMove(event)
     {
@@ -385,50 +401,56 @@
       }
 
       // Select a tile
-      for (var i = 0; i < gEngine.tiles.length; i++) {
-        var tile = gEngine.tiles[i];
-        if (posx > tile.pos.x && posx < (tile.pos.x + tile.size.x)) {
-          if (posy > tile.pos.y && posy < (tile.pos.y + tile.size.y)){
-            // remove tile if middle click
-            if (event.which == 2) {
-              gEngine.tiles.splice(i,1);
-              message = "Total: " + gEngine.tiles.length;
-              return;
-            }
-            if (tile.selected) {
-              // do not deselect if covering another tile
-              for (var j = 0; j < gEngine.tiles.length; j++) {
-                if (!gEngine.tiles[j].selected) {
-                  var begx = tile.pos.x;
-                  var begy = tile.pos.y;
-                  var endx = begx + tile.size.x;
-                  var endy = begy + tile.size.y;
-                  var begTileX = gEngine.tiles[j].pos.x;
-                  var begTileY = gEngine.tiles[j].pos.y;
-                  var endTileX = begTileX + gEngine.tiles[j].size.x;
-                  var endTileY = begTileY + gEngine.tiles[j].size.y;
+      if (selected) {
+        // remove tile if middle click
+        if (event.which == 2) {
+          gEngine.tiles.splice(i,1);
+          message = "Total: " + gEngine.tiles.length;
+          return;
+        }
+        for (var j = 0; j < gEngine.tiles.length; j++) {
+          if (!gEngine.tiles[j].selected) {
+            var begx = selected.pos.x;
+            var begy = selected.pos.y;
+            var endx = selected.mid.x;
+            var endy = selected.mid.y;
+            var begTileX = gEngine.tiles[j].pos.x;
+            var begTileY = gEngine.tiles[j].pos.y;
+            var endTileX = gEngine.tiles[j].mid.x;
+            var endTileY = gEngine.tiles[j].mid.y;
 
-                  console.log("begx: ", begx, " begTileX: ", begTileX);
-                  console.log("begy: ", begy, " begTileY: ", begTileY);
-                  console.log("endx: ", endx, " endTileX: ", endTileX);
-                  console.log("endy: ", endy, " endTileY: ", endTileY);
-                  if (begx == begTileX && begy == begTileY)
-                    return;
-                  if (endx == endTileX && endy == endTileY)
-                    return;
-                  if (begx == endTileX && begy == endTileY)
-                    return;
-                  if (endx == begTileX && endy == begTileY)
-                    return;
-                }
-              }
-              tile.selected = false;
-              console.log("deselected, ", i);
+            console.log("begx: ", begx, " begTileX: ", begTileX);
+            console.log("begy: ", begy, " begTileY: ", begTileY);
+            console.log("endx: ", endx, " endTileX: ", endTileX);
+            console.log("endy: ", endy, " endTileY: ", endTileY);
+            if (begx == begTileX && begy == begTileY)
               return;
-            
-            }
-            else {
+            if (endx == endTileX && endy == endTileY)
+              return;
+            if (begx == endTileX && begy == endTileY)
+              return;
+            if (endx == begTileX && endy == begTileY)
+              return;
+          }
+        }
+          selected.selected = false;
+          selected = null;
+          console.log("deselected, ", i);
+          return;
+      }
+      else {
+        for (var i = 0; i < gEngine.tiles.length; i++) {
+          var tile = gEngine.tiles[i];
+          if (posx > tile.pos.x && posx < (tile.pos.x + tile.size.x)) {
+            if (posy > tile.pos.y && posy < (tile.pos.y + tile.size.y)){
+              // remove tile if middle click
+              if (event.which == 2) {
+                gEngine.tiles.splice(i,1);
+                message = "Total: " + gEngine.tiles.length;
+                return;
+              }
               tile.selected = true;
+              selected = tile;
               console.log("selected, ", i);
               return;
             }
@@ -455,18 +477,8 @@
       }
     }
     
-    //function horizTile(x, y) {
-    //  ctx.drawImage(images.horizTile, x, y);
-    //}
-    
-    //function vertTile(x, y) {
-    //  ctx.drawImage(images.vertTile, x, y);
-    //}
-    
     gEngine.setup();
     intervalId = setInterval(gEngine.draw, 20);
-    //gEngine.factory['Vert'] = VertClass;
-    //gEngine.factory['Horiz'] = HorizClass; 
   </script>
      
 </html>
