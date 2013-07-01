@@ -3,6 +3,9 @@
   <head>
     <script src="jquery.min.js"></script>
     <style>
+      #instructions {
+        text-align: center;   
+      }
       .center {
         width: 400px;
         height: 400px;
@@ -17,6 +20,9 @@
     <title>Mutilated Chessboard</title>
   </head>
   <body>
+    <div id="instructions">
+      <h4>The chessboard below has had two of its corners removed. <br/> Can you cover the remaining 62 squares with 31 dominos? Try it!</h4>
+    </div>
     <div class="center">
       <canvas class="nocontext" id="board"></canvas>
     </div>
@@ -201,10 +207,11 @@
 
     });
 
-       // Base class for horizontal and vertical tiles
+    // Base class for horizontal and vertical tiles
     TileClass = Class.extend({
       pos: {x:0,y:0},
       size: {x:0,y:0},
+      mid: {x:0, y:0},
       image: null,
       _killed: false,
       currTile: null,
@@ -280,18 +287,13 @@
         ctx.drawImage(images.vertTile, this.pos.x, this.pos.y);
       }
     }); 
-   
-    var gEngine = new EngineClass();
     
-    
+    // Setup engine
+    var gEngine = new EngineClass();        
     gEngine.factory['Horiz'] = HorizClass;
-
-   
     gEngine.factory['Vert'] = VertClass;
 
-    //var gEngine = new EngineClass();
-
-
+    // Setup variables
     var canvas = null;
     var ctx = null;
     var intervalId;
@@ -370,10 +372,10 @@
 
           console.log("create horiz");
           // create a new horiz tile and select it
-          var horiz = gEngine.spawnTile("Horiz");
-          horiz.pos.x = 0;
-          horiz.pos.y = 410;
-          horiz.selected = true;
+          var htile = gEngine.spawnTile("Horiz");
+          htile.pos.x = 0;
+          htile.pos.y = 410;
+          htile.selected = true;
         
           // update total message
           message = "Total: " + gEngine.tiles.length;
@@ -388,10 +390,10 @@
             return;
 
           console.log("create vert");
-          var vert = gEngine.spawnTile("Vert");
-          vert.pos.x = 410;
-          vert.pos.y = 0;
-          vert.selected = true;
+          var vtile = gEngine.spawnTile("Vert");
+          vtile.pos.x = 410;
+          vtile.pos.y = 0;
+          vtile.selected = true;
         
           // update total message
           message = "Total: " + gEngine.tiles.length;
