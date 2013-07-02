@@ -1,0 +1,36 @@
+<!doctype html>
+<html>
+  <head>
+    <script src="js/jquery.min.js"></script>
+    <script src="js/tiles.js"></script>
+    <link rel="stylesheet" href="css/style.css">
+    <title>Untuition -- Mutilated Chessboard</title>
+  </head>
+  <body>
+    <div id="instructions">
+      <h3>
+          The chessboard below has had two of its corners removed. <br/> 
+          Can you cover the remaining 62 squares with 31 dominos? Try it!
+      </h3>
+      <p> 
+          Left click on the horizontal or vertical tiles that are outside of the chessboard
+          to add a new tile to the chessboard.
+          Once it is in the desired position, left click to place the tile.
+          To remove the tile middle click or shift + left click on the tile.
+      </p>
+    </div>
+    <div class="center">
+      <canvas class="nocontext" id="board"></canvas>
+    </div>
+    <script>
+      $('.nocontext').on('contextmenu',function(event) {
+        return false;
+      });
+    </script>
+  </body>
+  <script>
+    gEngine.setup();
+    intervalId = setInterval(gEngine.draw, 20);
+  </script>
+     
+</html>
