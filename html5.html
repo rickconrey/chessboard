@@ -6,6 +6,13 @@
       #instructions {
         text-align: center;   
       }
+      p {
+        width: 530px;
+        margin-left: auto;
+        margin-right: auto;
+        text-align: left;
+        padding-bottom: 15px;
+      }
       .center {
         width: 400px;
         height: 400px;
@@ -21,7 +28,16 @@
   </head>
   <body>
     <div id="instructions">
-      <h4>The chessboard below has had two of its corners removed. <br/> Can you cover the remaining 62 squares with 31 dominos? Try it!</h4>
+      <h3>
+          The chessboard below has had two of its corners removed. <br/> 
+          Can you cover the remaining 62 squares with 31 dominos? Try it!
+      </h3>
+      <p> 
+          Left click on the horizontal or vertical tiles that are outside of the chessboard
+          to add a new tile to the chessboard.
+          Once it is in the desired position, left click to place the tile.
+          To remove the tile middle click or ctrl(or command) + left click on the tile.
+      </p>
     </div>
     <div class="center">
       <canvas class="nocontext" id="board"></canvas>
@@ -191,6 +207,8 @@
         
         canvas.addEventListener("mousemove", onMouseMove);
         canvas.addEventListener("click", onClick); 
+        window.addEventListener("keydown", onKeyDown);
+        window.addEventListener("keyup", onKeyUp);
         //intervalId = setInterval(this.draw, 20);
 
       },
@@ -306,6 +324,19 @@
     var MAXTILES = 30;  // makes 31 tiles
     var message = "Total: 0";
     var selected = null;
+    var ctrl = 0;
+
+    function onKeyDown(event) {
+      if (event.ctrlKey) {
+        ctrl = 1;
+      }
+    }
+
+    function onKeyUp(event) {
+      if (event.keyCode == 17) {
+        ctrl = 0;
+      }
+    }
 
     function onMouseMove(event)
     {
@@ -370,13 +401,14 @@
           if (gEngine.tiles.length > MAXTILES) 
             return;
 
-          console.log("create horiz");
+          //console.log("create horiz");
           // create a new horiz tile and select it
           var htile = gEngine.spawnTile("Horiz");
           htile.pos.x = 0;
           htile.pos.y = 410;
           htile.selected = true;
-        
+          selected = htile;
+
           // update total message
           message = "Total: " + gEngine.tiles.length;
 
@@ -389,11 +421,12 @@
           if (gEngine.tiles.length > MAXTILES)
             return;
 
-          console.log("create vert");
+          //console.log("create vert");
           var vtile = gEngine.spawnTile("Vert");
           vtile.pos.x = 410;
           vtile.pos.y = 0;
           vtile.selected = true;
+          selected = vtile;
         
           // update total message
           message = "Total: " + gEngine.tiles.length;
@@ -405,9 +438,10 @@
       // Select a tile
       if (selected) {
         // remove tile if middle click
-        if (event.which == 2) {
-          gEngine.tiles.splice(i,1);
+        if (event.which == 2 || ctrl == 1) { 
+          gEngine.tiles.splice(gEngine.tiles.indexOf(selected),1);
           message = "Total: " + gEngine.tiles.length;
+          selected = null;
           return;
         }
         for (var j = 0; j < gEngine.tiles.length; j++) {
@@ -421,10 +455,10 @@
             var endTileX = gEngine.tiles[j].mid.x;
             var endTileY = gEngine.tiles[j].mid.y;
 
-            console.log("begx: ", begx, " begTileX: ", begTileX);
-            console.log("begy: ", begy, " begTileY: ", begTileY);
-            console.log("endx: ", endx, " endTileX: ", endTileX);
-            console.log("endy: ", endy, " endTileY: ", endTileY);
+            //console.log("begx: ", begx, " begTileX: ", begTileX);
+            //console.log("begy: ", begy, " begTileY: ", begTileY);
+            //console.log("endx: ", endx, " endTileX: ", endTileX);
+            //console.log("endy: ", endy, " endTileY: ", endTileY);
             if (begx == begTileX && begy == begTileY)
               return;
             if (endx == endTileX && endy == endTileY)
@@ -437,7 +471,7 @@
         }
           selected.selected = false;
           selected = null;
-          console.log("deselected, ", i);
+          //console.log("deselected, ", i);
           return;
       }
       else {
@@ -446,21 +480,21 @@
           if (posx > tile.pos.x && posx < (tile.pos.x + tile.size.x)) {
             if (posy > tile.pos.y && posy < (tile.pos.y + tile.size.y)){
               // remove tile if middle click
-              if (event.which == 2) {
+              if (event.which == 2 || ctrl == 1) {
                 gEngine.tiles.splice(i,1);
                 message = "Total: " + gEngine.tiles.length;
                 return;
               }
               tile.selected = true;
               selected = tile;
-              console.log("selected, ", i);
+              //console.log("selected, ", i);
               return;
             }
           }
         }
       }
         
-      console.log("click: ", posx, posy, event.which);
+      //console.log("click: ", posx, posy, event.which);
     }
 
     function loadImages(sources, callback) 
